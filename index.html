@@ -96,6 +96,11 @@ details p{margin:8px 0 0;color:var(--muted)}
 .code{font-family:var(--display);font-size:30px;color:var(--wine);letter-spacing:.06em}
 .deadline{background:var(--wine);color:var(--ivory);border-radius:10px;padding:10px 14px;font-size:15px}
 .btn.small{padding:8px 14px;font-size:14px}
+.vagas{display:inline-flex;align-items:baseline;gap:6px;border-radius:999px;padding:6px 14px;font-size:14px;margin:0 0 20px}
+.hero .vagas{background:rgba(255,255,255,.14);color:var(--ivory)}
+#inscricao .vagas{background:var(--rose);color:var(--wine-deep)}
+.vagas[hidden]{display:none}
+.vagas b{font-size:18px;font-variant-numeric:tabular-nums}
 footer{padding:28px 0 40px;font-size:14px;color:var(--muted)}
 footer b{color:var(--wine-deep)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -109,6 +114,7 @@ footer b{color:var(--wine-deep)}
     <h1>Eu também <em>existo.</em></h1>
     <p>Quem somos nós fora da maternidade? Um encontro para a mulher que existe antes, durante e depois de ser mãe. Um dia para te ouvires, seres acolhida e voltares a ti.</p>
     <div class="date"><strong>19 de dezembro de 2026</strong><span>09h00–16h00 · Maison BH, Luanda · 50 lugares</span></div>
+    <p class="vagas" id="vagas-hero" hidden></p><br>
     <a class="btn" href="#inscricao">Quero inscrever-me</a>
   </div>
 </header>
@@ -140,7 +146,8 @@ footer b{color:var(--wine-deep)}
 
   <section id="inscricao">
     <h2>Inscrição</h2>
-    <p>São apenas 50 lugares. Leva menos de um minuto e, no fim, recebes a confirmação no WhatsApp. Se os lugares esgotarem, ficas na lista de espera.</p>
+    <p class="vagas" id="vagas-form" hidden></p>
+    <p id="intro">São apenas 50 lugares. Leva menos de um minuto e, no fim, recebes a confirmação no WhatsApp. Se os lugares esgotarem, ficas na lista de espera.</p>
 
     <form id="f" novalidate>
       <label for="nome">Nome
@@ -184,17 +191,18 @@ footer b{color:var(--wine-deep)}
         </select>
       </label>
       <p class="err" id="err" role="alert"></p>
-      <button class="btn solid" type="submit">Inscrever-me</button>
+      <button class="btn solid" type="submit" id="submit">Inscrever-me</button>
     </form>
 
     <div class="done" id="done" aria-live="polite">
-      <h3>Inscrição quase feita</h3>
+      <h3 id="done-title">Inscrição quase feita</h3>
       <p>O teu código de inscrição:</p>
       <div class="code" id="code">LIB-0000</div>
       <p><b>1.</b> Envia já a tua inscrição pelo WhatsApp:</p>
       <div class="actions">
         <a class="btn solid" id="wa" href="#" target="_blank" rel="noopener">Enviar inscrição no WhatsApp</a>
       </div>
+      <div id="pay-steps">
       <p><b>2.</b> Faz o pagamento por transferência e escreve o teu código no descritivo:</p>
       <div class="pay">
         <dl>
@@ -212,6 +220,8 @@ footer b{color:var(--wine-deep)}
         <a class="btn solid" id="wa-comp" href="#" target="_blank" rel="noopener">Enviar comprovativo no WhatsApp</a>
       </div>
       <p>A equipa LIBERTA confirma o teu lugar quando receber o comprovativo.</p>
+      </div>
+      <p id="wait-note" hidden>Estás na lista de espera. Se abrir uma vaga, a equipa LIBERTA contacta-te pelo WhatsApp.</p>
       <p><b>Traz uma amiga.</b> Envia-lhe o convite para ela também se inscrever:</p>
       <div class="actions">
         <a class="btn ghost" id="share" href="#" target="_blank" rel="noopener">Partilhar no WhatsApp</a>
@@ -242,6 +252,25 @@ footer b{color:var(--wine-deep)}
 <script>
 (function(){
   var WA = "244959248980"; // WhatsApp da ALZENFORM (confirmado)
+  var API = ""; // URL da app da folha Google (Apps Script). Vazio = sem contagem de vagas.
+  var esgotado = false;
+
+  function mostraVagas(restam, lotacao){
+    var txt = restam > 0
+      ? "Restam <b>" + restam + "</b> de " + lotacao + " lugares"
+      : "<b>Esgotado</b> · inscreve-te na lista de espera";
+    ["vagas-hero","vagas-form"].forEach(function(id){ var el = document.getElementById(id); el.innerHTML = txt; el.hidden = false; });
+    if(restam <= 0){
+      esgotado = true;
+      document.getElementById("intro").textContent = "Os lugares esgotaram. Deixa os teus dados e entras na lista de espera: se abrir uma vaga, avisamos-te pelo WhatsApp.";
+      document.getElementById("submit").textContent = "Entrar na lista de espera";
+    }
+  }
+  if(API){
+    fetch(API).then(function(r){ return r.json(); }).then(function(d){
+      if(typeof d.restam === "number") mostraVagas(d.restam, d.lotacao || 50);
+    }).catch(function(){});
+  }
   var f = document.getElementById("f"), err = document.getElementById("err"), done = document.getElementById("done");
   var invite = "Vou ao LIBERTA — Eu também existo, um encontro para mulheres a 19 de dezembro, das 9h às 16h, na Maison BH. São só 50 lugares, vem comigo! Inscreve-te aqui: " + location.href.split("#")[0];
 
@@ -259,7 +288,7 @@ footer b{color:var(--wine-deep)}
     var code = "LIB-" + String(Math.floor(1000 + Math.random()*9000));
     var mae = (f.querySelector('input[name="mae"]:checked')||{}).value || "—";
     var lines = [
-      "Olá! Quero inscrever-me no LIBERTA — Eu também existo (19 de dezembro, Maison BH).",
+      (esgotado ? "Olá! Quero entrar na lista de espera do LIBERTA" : "Olá! Quero inscrever-me no LIBERTA")+" — Eu também existo (19 de dezembro, Maison BH).",
       "Nome: " + nome,
       "Telefone: " + tel,
       "Zona: " + (f.zona.value.trim() || "—"),
@@ -277,6 +306,17 @@ footer b{color:var(--wine-deep)}
     document.getElementById("wa-comp").href = "https://wa.me/" + WA + "?text=" + encodeURIComponent("Olá! Segue o comprovativo de pagamento da inscrição " + code + " no LIBERTA (" + nome + ", pacote " + pk + ").");
     document.getElementById("wa").href = "https://wa.me/" + WA + "?text=" + encodeURIComponent(lines.join("\n"));
     document.getElementById("share").href = "https://wa.me/?text=" + encodeURIComponent(invite);
+    if(esgotado){
+      document.getElementById("pay-steps").hidden = true;
+      document.getElementById("wait-note").hidden = false;
+      document.getElementById("done-title").textContent = "Estás quase na lista de espera";
+    }
+    if(API){
+      fetch(API, {method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body: JSON.stringify({codigo:code, nome:nome, telefone:tel, zona:f.zona.value.trim(), mae:mae,
+          origem:f.origem.value, pacote:pk, tamanho:(pk === "80.000 Kz" ? tam : "")})
+      }).catch(function(){});
+    }
     f.style.display = "none";
     done.classList.add("show");
     done.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
