@@ -259,11 +259,15 @@ footer b{color:var(--wine-deep)}
   var WA = "244959248980"; // WhatsApp da ALZENFORM (confirmado)
   var API = "https://script.google.com/macros/s/AKfycby_SPN8Kf0Yhu_0JMew1DizrFoug4uRszUgTU9JM2LreWng9SEsjp4eJ5LUyaVVvzrZHQ/exec"; // URL da app da folha Google (Apps Script). Vazio = sem contagem de vagas.
   var esgotado = false;
+  var AJUSTE = 19; // diferença entre vagas reais e vagas mostradas (pedido da organização a 19/11)
 
   function mostraVagas(restam, lotacao){
-    var txt = restam > 0
-      ? "Restam <b>" + restam + "</b> de " + lotacao + " lugares"
-      : "<b>Esgotado</b> · inscreve-te na lista de espera";
+    var mostra = restam - AJUSTE; // número mostrado (pedido da organização)
+    var txt = restam <= 0
+      ? "<b>Esgotado</b> · inscreve-te na lista de espera"
+      : mostra > 0
+        ? "Restam <b>" + mostra + "</b> de " + lotacao + " lugares"
+        : "<b>Últimos lugares</b>";
     ["vagas-hero","vagas-form"].forEach(function(id){ var el = document.getElementById(id); el.innerHTML = txt; el.hidden = false; });
     if(restam <= 0){
       esgotado = true;
